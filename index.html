@@ -1,0 +1,381 @@
+<html>
+  <head>
+    <title>DiseaseVerse | Your disease defining program</title>
+    <link href="DiseaseVerseLogo.png">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+
+    <link rel="icon" href="DiseaseVerseLogo.png">
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+
+
+    <style>
+      body{
+/*        background-color: rgb(200,230,255);*/
+          background-color: #b7d8d6;
+      }
+
+
+      #logo{
+        position:absolute;
+        width:auto;
+        height: 20%;
+
+        top:10%; left:50%; 
+        transform:translate(-50%,0); 
+      }
+
+      #searchbox {
+        position:absolute; 
+        top:35%; left:50%; 
+        transform:translate(-50%,-50%); 
+        font-size:35px; 
+        width:30%; 
+        padding-left:2%;
+        padding-right:2%;
+        padding-top:1%;
+        padding-bottom:1%;
+
+        background-color:rgb(250,250,250); 
+        border-color:rgb(255,255,255);
+        box-shadow: 03px 03px 25px 5px rgba(0,0,0,.2);
+        border-radius: 50px;
+        border: 0;
+        font-family: Tahoma, sans-serif;
+      }
+
+      #searchbox:hover{
+        transition: .2s;
+        box-shadow: 03px 03px 25px 5px rgba(0,0,0,.5);
+      }
+
+      #searchbox:focus{
+        box-shadow: 03px 03px 25px 5px rgba(0,0,0,.5);
+        outline:none;
+      }
+
+     
+
+      /*#disease-description-table{
+        width:80%;
+        position:absolute; 
+        top:90%; left:50%; 
+        transform:translate(-50%,-50%); 
+        font-size:10px; 
+
+      }*/
+
+      .tableFixHead {
+        overflow-x: auto;
+        height: 500px;
+
+        width:90%;
+        position:relative; 
+        top:60%; left:50%; 
+        transform:translate(-50%,0); 
+        font-size:20px; 
+
+        border-spacing: 0 10px;
+
+        
+
+        background-color: transparent;
+      }
+
+      .tableFixHead thead th {
+        position: sticky;
+        top: 0px;
+        background-color: #b7d8d6;
+        padding-bottom: 3%;
+
+        font-size: 25px;
+        padding: 10px 25px;
+        white-space: nowrap;
+      }
+
+    </style>
+
+
+  </head>
+  <body>
+
+    <py-config>
+      packages = ["matplotlib", "pandas"]
+    </py-config>
+
+    <py-script>
+      from js import createObject
+      from pyodide.ffi import create_proxy
+
+      createObject(create_proxy(globals()), "pyodideGlobals")
+
+      import pandas as pd
+      import os
+
+      from pyodide.http import open_url
+
+      url = (
+        "https://raw.githubusercontent.com/StrikerG1/Disease-description-dataset/683d8b725aa77ed69b26363520e2d203127223c6/processed-disease-description-dataset.csv"
+      )
+      df = pd.read_csv(open_url(url))
+
+      def search_disease(disease, nameonly=False, inDF=df, dropnull=False):
+          disease = disease.lower()
+          if dropnull:
+            if nameonly:
+                return inDF[inDF.Name.str.contains(disease)].sort_values(by='Name',key=lambda x: x.str.len()).dropna()
+            else:
+                return inDF[inDF.Synonym.str.contains(disease)].sort_values(by='Synonym',key=lambda x: x.str.len()).dropna()
+          else:
+            if nameonly:
+                return inDF[inDF.Name.str.contains(disease)].sort_values(by='Name',key=lambda x: x.str.len())
+            else:
+                return inDF[inDF.Name.str.contains(disease) == False & inDF.Synonym.str.contains(disease)].sort_values(by='Synonym',key=lambda x: x.str.len())
+
+      #dname = input('Enter a disease name: ').lower()
+
+      def formExecute(dname):
+        
+        dname = str(dname)
+
+        #frames=[search_disease(dname,True),search_disease(dname,True)]
+        #x = pd.concat(frames,ignore_index=True)
+
+        #x= pd.concat([search_disease(dname,nameonly=True,dropnull=True),search_disease(dname,nameonly=False,dropnull=True)],ignore_index=True)
+
+        x= search_disease(dname,nameonly=True,dropnull=True)
+
+
+        try:
+            #Element("disease-name").write('Disease: ' + x.iloc[0]['Name'])
+            #Element("disease-description").write(x.iloc[0]['Definition'].replace('_',' '))
+
+            #Element("col1-row0").write(x.iloc[0]['Name'])
+            #Element("col2-row0").write(x.iloc[0]['Definition'].replace('_',' '))
+
+            #print('Disease:', x.iloc[0]['Name'])
+            #print('Description:\n', x.iloc[0]['Definition'].replace('_',' '), sep='')
+
+            
+
+            for idx in range(x.shape[0]):#, a in enumerate(x):
+              if False:#idx == 20:
+                break
+              else:
+                try:
+                  Element("col1-row"+str(idx)).write(x.iloc[idx]['Name'])
+                except:
+                  Element("col1-row"+str(idx)).write("error")
+
+                try:
+                  Element("col2-row"+str(idx)).write(x.iloc[idx]['Definition'].replace('_',' '))
+                except:
+                  Element("col2-row"+str(idx)).write("error")
+
+                try:
+                  Element("col3-row"+str(idx)).write(x.iloc[idx]['Synonym'])
+                except:
+                  Element("col3-row"+str(idx)).write("error")
+
+            for idx in range(20-x.shape[0]):
+              try:
+                Element("col1-row"+str(idx+x.shape[0])).write("")
+                Element("col2-row"+str(idx+x.shape[0])).write("")
+                Element("col3-row"+str(idx+x.shape[0])).write("")
+              except:
+                pass
+
+        except IndexError:
+            #print('Sorry,',dname,'is not present in this database.')
+            #return 'Sorry,',dname,'is not present in this database.'
+            pass
+        except Exception as e:
+            #print('Exception',e,'occurred')
+            pass
+
+      class Circle():
+            def __init__(self, radius):
+                self.radius = radius
+
+            @property
+            def area(self):
+                return symbols['pi'] * self.radius**2
+
+    </py-script>
+
+    <img src="DiseaseVerseLogo.png" id="logo"></body>
+
+    <form id='myForm' onsubmit="myFunction(); return false;" action="#">
+      <input type="text" autocomplete="off" placeholder="Enter disease:" id="searchbox"/>
+    </form>
+
+ 
+
+    <div class="tableFixHead">
+      <table id="disease-description-table" style="display:none; border-spacing: 0 20px;">
+      
+
+        <thead>
+          <tr class="disease-description-table-heading">
+            <th style="width:20%">Disease</th>
+            <th style="width:60%">Description</th>
+            <th style="width:20%">Synonyms</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row0"></th>
+            <th class="description-column" id="col2-row0"></th>
+            <th class="synonyms-column" id="col3-row0"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row1"></th>
+            <th class="description-column" id="col2-row1"></th>
+            <th class="synonyms-column" id="col3-row1"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row2"></th>
+            <th class="description-column" id="col2-row2"></th>
+            <th class="synonyms-column" id="col3-row2"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row3"></th>
+            <th class="description-column" id="col2-row3"></th>
+            <th class="synonyms-column" id="col3-row3"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row4"></th>
+            <th class="description-column" id="col2-row4"></th>
+            <th class="synonyms-column" id="col3-row4"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row5"></th>
+            <th class="description-column" id="col2-row5"></th>
+            <th class="synonyms-column" id="col3-row5"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row6"></th>
+            <th class="description-column" id="col2-row6"></th>
+            <th class="synonyms-column" id="col3-row6"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row7"></th>
+            <th class="description-column" id="col2-row7"></th>
+            <th class="synonyms-column" id="col3-row7"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row8"></th>
+            <th class="description-column" id="col2-row8"></th>
+            <th class="synonyms-column" id="col3-row8"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row9"></th>
+            <th class="description-column" id="col2-row9"></th>
+            <th class="synonyms-column" id="col3-row9"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row10"></th>
+            <th class="description-column" id="col2-row10"></th>
+            <th class="synonyms-column" id="col3-row10"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row11"></th>
+            <th class="description-column" id="col2-row11"></th>
+            <th class="synonyms-column" id="col3-row11"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row12"></th>
+            <th class="description-column" id="col2-row12"></th>
+            <th class="synonyms-column" id="col3-row12"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row13"></th>
+            <th class="description-column" id="col2-row13"></th>
+            <th class="synonyms-column" id="col3-row13"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row14"></th>
+            <th class="description-column" id="col2-row14"></th>
+            <th class="synonyms-column" id="col3-row14"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row15"></th>
+            <th class="description-column" id="col2-row15"></th>
+            <th class="synonyms-column" id="col3-row15"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row16"></th>
+            <th class="description-column" id="col2-row16"></th>
+            <th class="synonyms-column" id="col3-row16"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row17"></th>
+            <th class="description-column" id="col2-row17"></th>
+            <th class="synonyms-column" id="col3-row17"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row18"></th>
+            <th class="description-column" id="col2-row18"></th>
+            <th class="synonyms-column" id="col3-row18"></th>
+          </tr>
+
+          <tr class="disease-description-table-row">
+            <th class="disease-column" id="col1-row19"></th>
+            <th class="description-column" id="col2-row19"></th>
+            <th class="synonyms-column" id="col3-row19"></th>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+
+
+    <script>
+      function createObject(object, variableName){
+            //Bind a variable whose name is the string variableName
+            // to the object called 'object'
+            let execString = variableName + " = object"
+            console.log("Running '" + execString + "'");
+            eval(execString)
+      }
+
+      function myFunction(){
+        document.getElementById("disease-description-table").style.display = "block";
+
+
+        var x = document.getElementById("myForm").elements[0].value
+        const form_execute = pyodideGlobals.get('formExecute');
+        //const form_execute = pyscript.interpreter.globals.get('formExecute')        
+    
+        (form_execute(x))
+
+        //document.getElementById("demo").innerHTML = disease
+
+
+      }
+
+
+    </script>
+
+  </body>
+</html>
